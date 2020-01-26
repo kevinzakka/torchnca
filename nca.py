@@ -1,6 +1,7 @@
 import numpy as np
 
 from scipy.spatial.distance import pdist, squareform
+from scipy.optimize import minimize
 from ipdb import set_trace
 
 
@@ -46,20 +47,31 @@ class NCA:
     return exp / np.sum(exp, axis=1)
 
   def _objective_func(self, A, X, y):
-    # apply linear transformation
-    prod = A @ X
-
-    # compute pairwise Euclidean distances
-    distances = squareform(pdist(prod.T, 'euclidean'))
+    # compute pairwise Euclidean distances in transformed space
+    distances = squareform(pdist((A @ X).T, 'euclidean'))
 
     # compute probas defined by softmax over distances
-    probas = self._softmax(distances)
-    np.fill_diagonal(probas, 0)
+    probas_pair = self._softmax(distances)
+    np.fill_diagonal(probas_pair, 0)
 
+    # create pairwise label matrix
+    y_pair = np.tile(y[:, np.newaxis], len(y)).T
+    y_dup = np.tile(y[:, np.newaxis], len(y))
+    y_bool = y_pair == y_dup
+
+    # zero out pairwise probas not of same class
+    probas = (probas_pair * y_bool).sum(axis=1)
+
+    # compute expected number of points correctly classified
+    ret = np.sum(probas)
+
+    return ret
+
+  def _grad(self, A, X, y):
+    """The gradient of the objective function with respect to A.
+    """
+    distances = squareform(pdist(X.T, 'euclidean'))
     set_trace()
-
-  def _grad(self, A):
-    pass
 
   def train(self, max_iters=10000):
     """Trains NCA until convergence.
@@ -70,9 +82,10 @@ class NCA:
     in the transformed space.
     """
     self._objective_func(self.A, self.X, self.y)
+    self._grad(self.A, self.X, self.y)
 
     print("optimizing...")
-    ret = optimize.minimize(
+    ret = minimize(
       self._objective_func,
       self.A,
       args=(self.X, self.y),
