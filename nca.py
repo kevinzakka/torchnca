@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 from scipy.spatial.distance import pdist, squareform
@@ -8,13 +10,10 @@ from ipdb import set_trace
 class NCA:
   """Neighbourhood Components Analysis.
   """
-  def __init__(self, X, y, dim=None, init="identity"):
+  def __init__(self, dim=None, init="random"):
     """Constructor.
 
     Args:
-      X (ndarray): The dataset of shape (D, N) where
-        `D` is the dimension of the feature space and `N`
-        is the number of training examples.
       dim (int): The dimension of the the learned
         linear map A. If no dimension is provided,
         we assume a square matrix A of same dimension
@@ -22,22 +21,26 @@ class NCA:
         (i.e. 2, 3), NCA will do dimensionality reduction.
       init (str): The type of initialization to use for
         the matrix A.
+          - `random`: A = N(O, I)
           - `identity`: A = I
           - `whitening`: A = Σ^(-0.5)
     """
-    D, N = X.shape
-    if dim is None:
-      dim = D
-    if init == "identity":
-      self.A = np.eye(dim, D)
-    elif init == "whitening":
+    self.dim = dim
+    self.init = init
+
+  def _init_transformation(self):
+    """Initialize the linear transformation A.
+    """
+    if self.dim is None:
+      self.dim = self.num_dims
+    if self.init == "random":
+      self.A = np.random.randn(self.dim, self.num_dims)
+    elif self.init == "identity":
+      self.A = np.eye(self.dim, self.num_dims)
+    elif self.init == "whitening":
       pass
     else:
       raise ValueError("[!] {} initialization is not supported.".format(init))
-
-    # store the data
-    self.X = X
-    self.y = y
 
   def _softmax(self, x):
     """Numerically stable softmax implementation.
@@ -46,50 +49,71 @@ class NCA:
     exp = np.exp(x - maxes)
     return exp / np.sum(exp, axis=1)
 
-  def _objective_func(self, A, X, y):
+  def _objective_func(self, A, X, y, y_mask):
     # compute pairwise Euclidean distances in transformed space
-    distances = squareform(pdist((A @ X).T, 'euclidean'))
+    distances = squareform(pdist(X @ A.T, 'euclidean'))
 
-    # compute probas defined by softmax over distances
-    probas_pair = self._softmax(distances)
-    np.fill_diagonal(probas_pair, 0)
+    # compute pairwise probability matrix p_ij
+    # defined by a softmax over distances in the
+    # transformed space.
+    p_ij = self._softmax(distances)
+    np.fill_diagonal(p_ij, 0)
 
-    # create pairwise label matrix
-    y_pair = np.tile(y[:, np.newaxis], len(y)).T
-    y_dup = np.tile(y[:, np.newaxis], len(y))
-    y_bool = y_pair == y_dup
+    # for each p_i, zero out any p_ij that
+    # is not of the same class label as i.
+    p_ij_mask = p_ij * y_mask
 
-    # zero out pairwise probas not of same class
-    probas = (probas_pair * y_bool).sum(axis=1)
+    # sum over js to compute p_i
+    p_i = np.sum(p_ij_mask, axis=1)
 
-    # compute expected number of points correctly classified
-    ret = np.sum(probas)
+    # compute expected number of points
+    # correctly classified by summing
+    # over all p_i's
+    p_total = np.sum(p_i)
 
-    return ret
+    # to maximize the above expectation
+    # we negate it and minimize it
+    cost = -p_total
 
-  def _grad(self, A, X, y):
-    """The gradient of the objective function with respect to A.
-    """
-    distances = squareform(pdist(X.T, 'euclidean'))
+    # compute the gradient of the cost function
+    # with respect to A
+    xij = squareform(pdist(X, 'euclidean'))
     set_trace()
 
-  def train(self, max_iters=10000):
+    return cost, grad
+
+  def train(self, X, y):
     """Trains NCA until convergence.
 
     Specifically, we maximize the expected number of points
     correctly classified under a stochastic selection rule.
     This rule is defined using a softmax over Euclidean distances
     in the transformed space.
-    """
-    self._objective_func(self.A, self.X, self.y)
-    self._grad(self.A, self.X, self.y)
 
-    print("optimizing...")
+    Args:
+      X (ndarray): The dataset of shape (N, D) where
+        `D` is the dimension of the feature space and `N`
+        is the number of training examples.
+      y (ndarray): The class labels of shape (N,).
+    """
+    self.num_train, self.num_dims = X.shape
+
+    # initialize the linear transformation matrix A
+    self._init_transformation()
+
+    # compute pairwise boolean class matrix
+    y_mask = y[:, None] == y[None, :]
+
+    self._objective_func(self.A, X, y, y_mask)
+
     ret = minimize(
       self._objective_func,
       self.A,
-      args=(self.X, self.y),
+      args=(X, y, y_mask),
       method="CG",
-      jac=self._grad,
-      options={'maxiter': max_iters, 'disp': True},
+      jac=True,
+      options={
+        'disp': True,
+        'maxiter': 100000,
+      },
     )

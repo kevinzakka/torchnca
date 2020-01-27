@@ -32,6 +32,7 @@ def gen_data(num_samples, num_classes=5, mean=0, std=5):
   np.random.shuffle(indices)
   X = X[:, indices]
   y = y[indices]
+  X = X.T  # transpose
   return X, y
   
 
@@ -43,13 +44,12 @@ def main():
   X, y = gen_data(num_samples)
 
   # plot the data
-  plt.scatter(X[0, :], X[1, :], c=y, cmap=plt.cm.Spectral)
+  plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
   plt.grid(True)
   plt.show()
 
-  nca = NCA(X, y, dim=2, init="identity")
-
-  nca.train()
+  nca = NCA(dim=2, init="identity")
+  nca.train(X, y)
 
 
 if __name__ == "__main__":
