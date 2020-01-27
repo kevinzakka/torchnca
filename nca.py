@@ -1,4 +1,7 @@
-import time
+"""A python implementation of NCA.
+
+Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
+"""
 
 import numpy as np
 
@@ -48,19 +51,20 @@ class NCA:
       raise ValueError("[!] {} initialization is not supported.".format(init))
 
   def _softmax(self, x):
-    """Numerically stable softmax implementation.
-    """
     np.fill_diagonal(x, -np.inf)
     exp = np.exp(x)
     return exp / np.sum(exp, axis=1)
 
-  def _objective_func(self, A, X, y, y_mask):
+  def _pairwise_l2_sq(self, X):
+    return squareform(pdist(X, 'sqeuclidean'))
+
+  def _objective_func(self, A, X, y_mask):
     N, D = X.shape
-    A = A.reshape(-1, D)
+    A = A.reshape(-1, D)  # because minimize flattens it
 
     # compute pairwise squared Euclidean distances
     # in transformed space
-    distances = squareform(pdist(X @ A.T, 'sqeuclidean'))
+    distances = self._pairwise_l2_sq(X @ A.T)
 
     # compute pairwise probability matrix p_ij
     # defined by a softmax over negative squared
@@ -126,12 +130,12 @@ class NCA:
     ret = minimize(
       self._objective_func,
       self.A,  # initial solution
-      args=(X, y, y_mask),
+      args=(X, y_mask),
       method="CG",
       jac=True,
       options={
         'disp': True,
-        'maxiter': 50,
+        'maxiter': 500,
       },
     )
 

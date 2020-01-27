@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from nca import NCA
-from ipdb import set_trace
 
 
 def make_circle(r, num_samples):
@@ -44,10 +43,10 @@ def main():
 
   X, y = gen_data(num_samples)
 
-  # # plot the data
-  # plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
-  # plt.grid(True)
-  # plt.show()
+  # plot the data
+  plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+  plt.grid(True)
+  plt.show()
 
   nca = NCA(dim=2, init="random")
   nca.train(X, y)
