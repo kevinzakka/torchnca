@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from nca import NCA
+from ipdb import set_trace
 
 
 def make_circle(r, num_samples):
   t = np.linspace(0, 2*np.pi, num_samples)
   xc, yc = 0, 0
-  x = r*np.cos(t) + 0.2*np.random.randn(num_samples) + xc  
+  x = r*np.cos(t) + 0.2*np.random.randn(num_samples) + xc
   y = r*np.sin(t) + 0.2*np.random.randn(num_samples) + yc
   return x, y
 
@@ -32,24 +33,30 @@ def gen_data(num_samples, num_classes=5, mean=0, std=5):
   np.random.shuffle(indices)
   X = X[:, indices]
   y = y[indices]
-  X = X.T  # transpose
+  X = X.T  # make it (N, D)
   return X, y
-  
+
 
 
 def main():
   np.random.seed(0)
-  num_samples = 200
+  num_samples = 25
 
   X, y = gen_data(num_samples)
 
-  # plot the data
-  plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+  # # plot the data
+  # plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+  # plt.grid(True)
+  # plt.show()
+
+  nca = NCA(dim=2, init="random")
+  nca.train(X, y)
+
+  X_tr = nca(X)
+
+  plt.scatter(X_tr[:, 0], X_tr[:, 1], c=y, cmap=plt.cm.Spectral)
   plt.grid(True)
   plt.show()
-
-  nca = NCA(dim=2, init="identity")
-  nca.train(X, y)
 
 
 if __name__ == "__main__":

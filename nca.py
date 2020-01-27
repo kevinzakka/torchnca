@@ -28,6 +28,11 @@ class NCA:
     self.dim = dim
     self.init = init
 
+  def __call__(self, X):
+    """Apply the learned linear map to the input.
+    """
+    return X @ self.A.T
+
   def _init_transformation(self):
     """Initialize the linear transformation A.
     """
@@ -45,19 +50,26 @@ class NCA:
   def _softmax(self, x):
     """Numerically stable softmax implementation.
     """
-    maxes = np.max(x, axis=1)
-    exp = np.exp(x - maxes)
+    np.fill_diagonal(x, -np.inf)
+    exp = np.exp(x)
     return exp / np.sum(exp, axis=1)
 
   def _objective_func(self, A, X, y, y_mask):
-    # compute pairwise Euclidean distances in transformed space
-    distances = squareform(pdist(X @ A.T, 'euclidean'))
+    N, D = X.shape
+    A = A.reshape(-1, D)
+
+    # compute pairwise squared Euclidean distances
+    # in transformed space
+    distances = squareform(pdist(X @ A.T, 'sqeuclidean'))
 
     # compute pairwise probability matrix p_ij
-    # defined by a softmax over distances in the
-    # transformed space.
-    p_ij = self._softmax(distances)
-    np.fill_diagonal(p_ij, 0)
+    # defined by a softmax over negative squared
+    # distances in the transformed space.
+    # since we are dealing with negative values
+    # with the largest value being 0, we need
+    # not worry about numerical instabilities
+    # in the softmax function
+    p_ij = self._softmax(-distances)
 
     # for each p_i, zero out any p_ij that
     # is not of the same class label as i.
@@ -73,14 +85,21 @@ class NCA:
 
     # to maximize the above expectation
     # we negate it and minimize it
-    cost = -p_total
+    loss = -p_total
 
     # compute the gradient of the cost function
     # with respect to A
-    xij = squareform(pdist(X, 'euclidean'))
-    set_trace()
+    outer_sum1 = np.zeros((D, D))
+    outer_sum2 = np.zeros((D, D))
+    for i in range(N):
+      diff = X[i] - X
+      p = p_ij[i]
+      outer_sum1 += (p_i[i] * np.einsum('i,ij,ik->jk', p, diff, diff))
+      p = p_ij_mask[i]
+      outer_sum2 += np.einsum('i,ij,ik->jk', p, diff, diff)
+    grad = 2 * A @ (outer_sum1 - outer_sum2)
 
-    return cost, grad
+    return loss, grad.ravel()
 
   def train(self, X, y):
     """Trains NCA until convergence.
@@ -104,16 +123,16 @@ class NCA:
     # compute pairwise boolean class matrix
     y_mask = y[:, None] == y[None, :]
 
-    self._objective_func(self.A, X, y, y_mask)
-
     ret = minimize(
       self._objective_func,
-      self.A,
+      self.A,  # initial solution
       args=(X, y, y_mask),
       method="CG",
       jac=True,
       options={
         'disp': True,
-        'maxiter': 100000,
+        'maxiter': 50,
       },
     )
+
+    self.A = ret['x'].reshape(-1, self.num_dims)
