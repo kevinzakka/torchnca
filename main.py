@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from nca import NCA
+from sklearn.decomposition import PCA
 
 
 def make_circle(r, num_samples):
@@ -34,15 +35,14 @@ def gen_data(num_samples, num_classes, mean, std, device):
   X = X[:, indices]
   y = y[indices]
   X = X.T  # make it (N, D)
-  X = torch.from_numpy(X).float().to(device)
-  y = torch.from_numpy(y).long().to(device)
   return X, y
 
 
-def plot(X, y):
-  data = X.detach().cpu().numpy()
-  labels = y.detach().cpu().numpy()
-  plt.scatter(data[:, 0], data[:, 1], c=labels, cmap=plt.cm.Spectral)
+def plot(Xs, y, labels):
+  fig, axes = plt.subplots(1, 2)
+  for ax, X, lab in zip(axes, Xs, labels): 
+    ax.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+    ax.title.set_text(lab)
   plt.grid(True)
   plt.show()
 
@@ -54,14 +54,21 @@ def main():
   num_samples = 100
 
   X, y = gen_data(num_samples, 5, 0, 5, device)
-  plot(X, y)
 
-  nca = NCA(dim=2, init="random")
+  # fit PCA
+  pca = PCA(n_components=2)
+  pca.fit(X)
+  X_pca = pca.transform(X)
+  
+  # fit NCA
+  X = torch.from_numpy(X).float().to(device)
+  y = torch.from_numpy(y).long().to(device)
+  nca = NCA(dim=2, init="random", max_iters=500)
   nca.train(X, y, batch_size=64)
+  X_nca = nca(X).detach().cpu().numpy()
+  y = y.detach().cpu().numpy()
 
-  # transform and plot
-  X_tr = nca(X)
-  plot(X_tr, y)
+  plot([X_nca, X_pca], y, ["nca", "pca"])
 
 
 if __name__ == "__main__":

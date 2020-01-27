@@ -5,15 +5,12 @@ Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-
-from ipdb import set_trace
 
 
 class NCA:
   """Neighbourhood Components Analysis.
   """
-  def __init__(self, dim=None, init="random", max_iters=500, tol=1e-6):
+  def __init__(self, dim=None, init="random", max_iters=500, tol=1e-5):
     """Constructor.
 
     Args:
@@ -157,4 +154,3 @@ class NCA:
         break
 
     self.A = optimizer.param_groups[0]['params'][0].clone()
-    print(self.A)
