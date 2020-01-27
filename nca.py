@@ -153,7 +153,7 @@ class NCA:
       # check if within convergence
       A_curr = optimizer.param_groups[0]['params'][0]
       if torch.all(torch.abs(A_prev - A_curr) < self.tol):
-        print("[*] Optimization converged.")
+        print("[*] Optimization has converged.")
         break
 
     self.A = optimizer.param_groups[0]['params'][0].clone()

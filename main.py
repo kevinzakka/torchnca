@@ -40,10 +40,12 @@ def gen_data(num_samples, num_classes, mean, std, device):
 
 
 def plot(Xs, y, labels):
-  fig, axes = plt.subplots(1, 2)
+  fig, axes = plt.subplots(1, len(labels), figsize=(8, 4))
   for ax, X, lab in zip(axes, Xs, labels): 
     ax.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
     ax.title.set_text(lab)
+  plt.savefig("./assets/res.png", format="png", dpi=300)
+  plt.tight_layout()
   plt.show()
 
 
@@ -57,7 +59,7 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 200
+  num_samples = 100
   X, y = gen_data(num_samples, 5, 0, 5, device)
 
   # fit PCA
@@ -72,6 +74,7 @@ def main(args):
   nca.train(X, y, batch_size=64)
   X_nca = nca(X).detach().cpu().numpy()
   y = y.detach().cpu().numpy()
+  X = X.detach().cpu().numpy()
 
   plot([X_nca, X_pca], y, ["nca", "pca"])
 
@@ -79,6 +82,6 @@ def main(args):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
-  parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=True, help="Whether to show GUI.")
+  parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to show GUI.")
   args, unparsed = parser.parse_known_args()
   main(args)
