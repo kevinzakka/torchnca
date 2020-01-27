@@ -3,6 +3,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 
 from nca import NCA
 
@@ -15,7 +16,7 @@ def make_circle(r, num_samples):
   return x, y
 
 
-def gen_data(num_samples, num_classes=5, mean=0, std=5):
+def gen_data(num_samples, num_classes, mean, std, device):
   """Generates the data.
   """
   num_samples_per = num_samples // num_classes
@@ -33,29 +34,34 @@ def gen_data(num_samples, num_classes=5, mean=0, std=5):
   X = X[:, indices]
   y = y[indices]
   X = X.T  # make it (N, D)
+  X = torch.from_numpy(X).float().to(device)
+  y = torch.from_numpy(y).long().to(device)
   return X, y
 
+
+def plot(X, y):
+  data = X.detach().cpu().numpy()
+  labels = y.detach().cpu().numpy()
+  plt.scatter(data[:, 0], data[:, 1], c=labels, cmap=plt.cm.Spectral)
+  plt.grid(True)
+  plt.show()
 
 
 def main():
   np.random.seed(0)
-  num_samples = 25
+  torch.cuda.manual_seed(0)
+  device = torch.device("cuda")
+  num_samples = 100
 
-  X, y = gen_data(num_samples)
-
-  # plot the data
-  plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
-  plt.grid(True)
-  plt.show()
+  X, y = gen_data(num_samples, 5, 0, 5, device)
+  plot(X, y)
 
   nca = NCA(dim=2, init="random")
-  nca.train(X, y)
+  nca.train(X, y, batch_size=64)
 
+  # transform and plot
   X_tr = nca(X)
-
-  plt.scatter(X_tr[:, 0], X_tr[:, 1], c=y, cmap=plt.cm.Spectral)
-  plt.grid(True)
-  plt.show()
+  plot(X_tr, y)
 
 
 if __name__ == "__main__":
