@@ -124,7 +124,10 @@ class NCA:
     # initialize the linear transformation matrix A
     self._init_transformation()
 
-    optimizer = torch.optim.SGD([self.A], lr=1e-4, momentum=0.9)
+    # compute pairwise boolean class matrix
+    y_mask = y[:, None] == y[None, :]
+
+    optimizer = torch.optim.SGD([self.A], lr=1e-5, momentum=0.99)
     iters_per_epoch = int(np.ceil(self.num_train / batch_size))
     i_global = 0
     for epoch in range(self.max_iters):
@@ -135,16 +138,16 @@ class NCA:
         y_batch = y[i*batch_size:(i+1)*batch_size]
 
         # compute pairwise boolean class matrix
-        y_mask = y_batch[:, None] == y_batch[None, :]
+        y_mask_batch = y_mask[i*batch_size:(i+1)*batch_size, i*batch_size:(i+1)*batch_size]
 
         # compute loss and take gradient step
         optimizer.zero_grad()
-        loss = self.loss(X_batch, y_mask)
+        loss = self.loss(X_batch, y_mask_batch)
         loss.backward()
         optimizer.step()
 
         i_global += 1
-        if not i_global % 25:
+        if not i_global % 100:
           print("epoch: {} - loss: {:.2f}".format(epoch+1, loss.item()))
 
       # check if within convergence

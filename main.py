@@ -1,6 +1,7 @@
 """NCA for linear dimensionality reduction.
 """
 
+import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -43,16 +44,20 @@ def plot(Xs, y, labels):
   for ax, X, lab in zip(axes, Xs, labels): 
     ax.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
     ax.title.set_text(lab)
-  plt.grid(True)
   plt.show()
 
 
-def main():
-  np.random.seed(0)
-  torch.cuda.manual_seed(0)
-  device = torch.device("cuda")
-  num_samples = 100
+def main(args):
+  np.random.seed(args.seed)
+  if args.cuda:
+    torch.cuda.manual_seed(args.seed)
+    device = torch.device("cuda")
+  else:
+    print("[*] Using cpu.")
+    torch.manual_seed(args.seed)
+    device = torch.device("cpu")
 
+  num_samples = 200
   X, y = gen_data(num_samples, 5, 0, 5, device)
 
   # fit PCA
@@ -63,7 +68,7 @@ def main():
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
-  nca = NCA(dim=2, init="random", max_iters=500)
+  nca = NCA(dim=2, init="identity", max_iters=1000, tol=1e-4)
   nca.train(X, y, batch_size=64)
   X_nca = nca(X).detach().cpu().numpy()
   y = y.detach().cpu().numpy()
@@ -72,4 +77,8 @@ def main():
 
 
 if __name__ == "__main__":
-  main()
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
+  parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=True, help="Whether to show GUI.")
+  args, unparsed = parser.parse_known_args()
+  main(args)
