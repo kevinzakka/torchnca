@@ -59,7 +59,7 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 200
+  num_samples = 100
   X, y = gen_data(num_samples, 5, 0, 5, device)
 
   plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
@@ -74,7 +74,7 @@ def main(args):
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
   nca = NCA(dim=2, init="identity", max_iters=500, tol=1e-4)
-  nca.train(X, y, batch_size=64)
+  nca.train(X, y)
   print(nca.A.detach().cpu().numpy())
   X_nca = nca(X).detach().cpu().numpy()
   y = y.detach().cpu().numpy()

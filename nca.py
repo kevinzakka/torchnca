@@ -119,7 +119,7 @@ class NCA:
     self.num_train, self.num_dims = X.shape
     self.device = torch.device("cuda" if X.is_cuda else "cpu")
     if batch_size is None:
-      batch_size = self.num_train
+      batch_size = self.num_train // 2
 
     # initialize the linear transformation matrix A
     self._init_transformation()
