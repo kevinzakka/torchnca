@@ -1,11 +1,10 @@
-"""A pytorch implementation of NCA.
+"""A simple implementation of NCA.
 
 Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
 """
 
 import numpy as np
 import torch
-from ipdb import set_trace
 
 
 class NCA:
@@ -96,7 +95,7 @@ class NCA:
     # correctly classified by summing
     # over all p_i's.
     # to maximize the above expectation
-    # we can negate it and feed it to 
+    # we can negate it and feed it to
     # a minimizer
     loss = -torch.log(p_i).sum()
 

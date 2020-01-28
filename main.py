@@ -25,8 +25,10 @@ def gen_data(num_samples, num_classes, mean, std, device):
   X = []
   y = []
   for i, r in enumerate(range(num_classes)):
-    x1, x2 = make_circle(r+1+0.5, num_samples)
-    x3 = std*np.random.randn(num_samples) + mean  # third dimension is noise
+    # first two dimensions are that of a circle
+    x1, x2 = make_circle(r+1.5, num_samples)
+    # third dimension is Gaussian noise
+    x3 = std*np.random.randn(num_samples) + mean
     X.append(np.stack([x1, x2, x3]))
     y.append(np.repeat(i, num_samples))
   X = np.concatenate(X, axis=1)
@@ -39,13 +41,14 @@ def gen_data(num_samples, num_classes, mean, std, device):
   return X, y
 
 
-def plot(Xs, y, labels):
+def plot(Xs, y, labels, save=None):
   fig, axes = plt.subplots(1, len(labels), figsize=(8, 4))
-  for ax, X, lab in zip(axes, Xs, labels): 
+  for ax, X, lab in zip(axes, Xs, labels):
     ax.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
     ax.title.set_text(lab)
-  plt.savefig("./assets/res.png", format="png", dpi=300)
-  plt.tight_layout()
+  if save is not None:
+    plt.savefig("./assets/{}".format(save), format="png", dpi=300)
+    plt.tight_layout()
   plt.show()
 
 
@@ -59,9 +62,11 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 100
-  X, y = gen_data(num_samples, 5, 0, 5, device)
+  num_samples = 150
+  noise_std = 5
+  X, y = gen_data(num_samples, 5, 0, noise_std, device)
 
+  # plot first two dimensions of original data
   plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
   plt.show()
 
@@ -69,12 +74,12 @@ def main(args):
   pca = PCA(n_components=2)
   pca.fit(X)
   X_pca = pca.transform(X)
-  
+
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
   nca = NCA(dim=2, init="identity", max_iters=500, tol=1e-4)
-  nca.train(X, y)
+  nca.train(X, y, batch_size=128)
   print(nca.A.detach().cpu().numpy())
   X_nca = nca(X).detach().cpu().numpy()
   y = y.detach().cpu().numpy()
