@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 
 def make_circle(r, num_samples):
   t = np.linspace(0, 2*np.pi, num_samples)
-  xc, yc = 0, 0
+  xc, yc = 0, 0  # center coordinates
   x = r*np.cos(t) + 0.2*np.random.randn(num_samples) + xc
   y = r*np.sin(t) + 0.2*np.random.randn(num_samples) + yc
   return x, y
@@ -62,7 +62,7 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 150
+  num_samples = 500
   noise_std = 5
   X, y = gen_data(num_samples, 5, 0, noise_std, device)
 
@@ -78,14 +78,16 @@ def main(args):
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
-  nca = NCA(dim=2, init="identity", max_iters=500, tol=1e-4)
-  nca.train(X, y, batch_size=128)
-  print(nca.A.detach().cpu().numpy())
+  nca = NCA(dim=2, init="identity", max_iters=500, tol=1e-5)
+  nca.train(X, y, batch_size=256, lr=1e-6, momentum=0.9)
   X_nca = nca(X).detach().cpu().numpy()
+  
+  # plot PCA vs NCA
   y = y.detach().cpu().numpy()
   X = X.detach().cpu().numpy()
-
   plot([X_nca, X_pca], y, ["nca", "pca"])
+
+  print(nca.A.detach().cpu().numpy())
 
 
 if __name__ == "__main__":
