@@ -5,6 +5,7 @@ Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
 
 import numpy as np
 import torch
+from ipdb import set_trace
 
 
 class NCA:
@@ -46,7 +47,7 @@ class NCA:
     if self.dim is None:
       self.dim = self.num_dims
     if self.init == "random":
-      self.A = torch.randn(self.dim, self.num_dims, requires_grad=True, device=self.device)
+      self.A = torch.rand(self.dim, self.num_dims, requires_grad=True, device=self.device)
     elif self.init == "identity":
       self.A = torch.eye(self.dim, self.num_dims, requires_grad=True, device=self.device)
     else:
@@ -60,16 +61,13 @@ class NCA:
     dist = norm_sq[None, :] - 2*dot + norm_sq[:, None]
     dist = torch.clamp(dist, min=0)  # replace negative values with 0
     dist[dist != dist] = 0  # replace nan values with 0
+    dist.diagonal().copy_(np.inf*torch.ones(len(dist)))
     return dist
 
   def _softmax(self, X):
     """Compute row-wise softmax.
     """
-    exp = torch.exp(X)
-    # zero out diagonal
-    mask = torch.eye(X.shape[0], device=self.device).byte()
-    mask = (~mask).float()
-    exp = exp * mask
+    exp = torch.exp(X).clone()
     return exp / exp.sum(dim=1)
 
   def loss(self, X, y_mask):
@@ -104,7 +102,7 @@ class NCA:
 
     return loss
 
-  def train(self, X, y, batch_size=64):
+  def train(self, X, y, batch_size=None):
     """Trains NCA until convergence.
 
     Specifically, we maximize the expected number of points
@@ -120,6 +118,8 @@ class NCA:
     """
     self.num_train, self.num_dims = X.shape
     self.device = torch.device("cuda" if X.is_cuda else "cpu")
+    if batch_size is None:
+      batch_size = self.num_train
 
     # initialize the linear transformation matrix A
     self._init_transformation()
@@ -136,8 +136,6 @@ class NCA:
         # grab batch
         X_batch = X[i*batch_size:(i+1)*batch_size]
         y_batch = y[i*batch_size:(i+1)*batch_size]
-
-        # compute pairwise boolean class matrix
         y_mask_batch = y_mask[i*batch_size:(i+1)*batch_size, i*batch_size:(i+1)*batch_size]
 
         # compute loss and take gradient step
@@ -148,7 +146,7 @@ class NCA:
 
         i_global += 1
         if not i_global % 100:
-          print("epoch: {} - loss: {:.2f}".format(epoch+1, loss.item()))
+          print("epoch: {} - loss: {:.5f}".format(epoch+1, loss.item()))
 
       # check if within convergence
       A_curr = optimizer.param_groups[0]['params'][0]
