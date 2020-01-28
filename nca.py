@@ -6,6 +6,7 @@ Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
 import numpy as np
 import torch
 from ipdb import set_trace
+from sklearn.metrics import pairwise_distances
 
 
 class NCA:
@@ -56,18 +57,16 @@ class NCA:
   def _pairwise_l2_sq(self, X):
     """Compute pairwise squared Euclidean distances.
     """
-    dot = torch.mm(X, torch.t(X))
+    dot = torch.mm(X.double(), torch.t(X.double()))
     norm_sq = torch.diag(dot)
     dist = norm_sq[None, :] - 2*dot + norm_sq[:, None]
     dist = torch.clamp(dist, min=0)  # replace negative values with 0
-    dist[dist != dist] = 0  # replace nan values with 0
-    dist.diagonal().copy_(np.inf*torch.ones(len(dist)))
-    return dist
+    return dist.float()
 
   def _softmax(self, X):
     """Compute row-wise softmax.
     """
-    exp = torch.exp(X).clone()
+    exp = torch.exp(X)
     return exp / exp.sum(dim=1)
 
   def loss(self, X, y_mask):
@@ -75,6 +74,10 @@ class NCA:
     # in transformed space
     embedding = torch.mm(X, torch.t(self.A))
     distances = self._pairwise_l2_sq(embedding)
+
+    # fill diagonal values such that exponentiating them
+    # makes them equal to 0
+    distances.diagonal().copy_(np.inf*torch.ones(len(distances)))
 
     # compute pairwise probability matrix p_ij
     # defined by a softmax over negative squared
@@ -98,7 +101,7 @@ class NCA:
     # to maximize the above expectation
     # we can negate it and feed it to
     # a minimizer
-    loss = -torch.log(p_i).sum()
+    loss = -p_i.sum()
 
     return loss
 

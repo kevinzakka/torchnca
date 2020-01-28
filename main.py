@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 
 def make_circle(r, num_samples):
   t = np.linspace(0, 2*np.pi, num_samples)
-  xc, yc = 0, 0  # center coordinates
+  xc, yc = 0, 0  # circle center coordinates
   x = r*np.cos(t) + 0.2*np.random.randn(num_samples) + xc
   y = r*np.sin(t) + 0.2*np.random.randn(num_samples) + yc
   return x, y
@@ -62,9 +62,8 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 500
-  noise_std = 5
-  X, y = gen_data(num_samples, 5, 0, noise_std, device)
+  num_samples = 200
+  X, y = gen_data(num_samples, 5, 0, args.sigma, device)
 
   # plot first two dimensions of original data
   plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
@@ -86,13 +85,15 @@ def main(args):
   y = y.detach().cpu().numpy()
   X = X.detach().cpu().numpy()
   plot([X_nca, X_pca], y, ["nca", "pca"])
-
-  print(nca.A.detach().cpu().numpy())
+  
+  A = nca.A.detach().cpu().numpy()
+  print("\nSolution: \n", A)
 
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
+  parser.add_argument("--sigma", type=float, default=5, help="The standard deviation of the Gaussian noise.")
   parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to show GUI.")
   args, unparsed = parser.parse_known_args()
   main(args)
