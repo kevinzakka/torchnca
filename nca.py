@@ -122,38 +122,37 @@ class NCA:
     self.num_train, self.num_dims = X.shape
     self.device = torch.device("cuda" if X.is_cuda else "cpu")
     if batch_size is None:
-      batch_size = self.num_train // 2
+      batch_size = self.num_train
 
     # initialize the linear transformation matrix A
     self._init_transformation()
 
     optimizer = torch.optim.SGD([self.A], lr=lr, momentum=momentum)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.9)
     iters_per_epoch = int(np.ceil(self.num_train / batch_size))
     i_global = 0
     for epoch in range(self.max_iters):
       rand_idxs = torch.randperm(len(y))  # shuffle dataset
       X = X[rand_idxs]
       y = y[rand_idxs]
-      y_mask = y[:, None] == y[None, :]  # compute pairwise boolean class matrix
       A_prev = optimizer.param_groups[0]['params'][0].clone()
       for i in range(iters_per_epoch):
         # grab batch
         X_batch = X[i*batch_size:(i+1)*batch_size]
-        y_mask_batch = y_mask[i*batch_size:(i+1)*batch_size, i*batch_size:(i+1)*batch_size]
+        y_batch = y[i*batch_size:(i+1)*batch_size]
+
+        # compute pairwise boolean class matrix
+        y_mask = y_batch[:, None] == y_batch[None, :]
 
         # compute loss and take gradient step
         optimizer.zero_grad()
-        loss = self.loss(X_batch, y_mask_batch)
+        loss = self.loss(X_batch, y_mask)
         loss.backward()
+        torch.nn.utils.clip_grad_norm([self.A], 5)
         optimizer.step()
 
         i_global += 1
-        if not i_global % 100:
+        if not i_global % 25:
           print("epoch: {} - loss: {:.5f}".format(epoch+1, loss.item()))
-
-      # anneal learning rate
-      scheduler.step()
 
       # check if within convergence
       A_curr = optimizer.param_groups[0]['params'][0]

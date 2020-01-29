@@ -26,11 +26,11 @@ def gen_data(num_samples, num_classes, mean, std, device):
   y = []
   for i, r in enumerate(range(num_classes)):
     # first two dimensions are that of a circle
-    x1, x2 = make_circle(r+1.5, num_samples)
+    x1, x2 = make_circle(r+1.5, num_samples_per)
     # third dimension is Gaussian noise
-    x3 = std*np.random.randn(num_samples) + mean
+    x3 = std*np.random.randn(num_samples_per) + mean
     X.append(np.stack([x1, x2, x3]))
-    y.append(np.repeat(i, num_samples))
+    y.append(np.repeat(i, num_samples_per))
   X = np.concatenate(X, axis=1)
   y = np.concatenate(y)
   indices = list(range(X.shape[1]))
@@ -62,8 +62,9 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 200
+  num_samples = 500
   X, y = gen_data(num_samples, 5, 0, args.sigma, device)
+  print(X.shape)
 
   # plot first two dimensions of original data
   plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
@@ -77,8 +78,8 @@ def main(args):
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
-  nca = NCA(dim=2, init="identity", max_iters=500, tol=1e-5)
-  nca.train(X, y, batch_size=256, lr=1e-6, momentum=0.9)
+  nca = NCA(dim=2, init="random", max_iters=500, tol=1e-5)
+  nca.train(X, y, batch_size=256, lr=1e-4, momentum=0)
   X_nca = nca(X).detach().cpu().numpy()
   
   # plot PCA vs NCA
