@@ -1,6 +1,6 @@
 # Neighbourhood Components Analysis
 
-A pytorch implementation of [Neighbourhood Components Analysis]() by *J. Goldberger, G. Hinton, S. Roweis, R. Salakhutdinov*.
+A PyTorch implementation of [Neighbourhood Components Analysis]() by *J. Goldberger, G. Hinton, S. Roweis, R. Salakhutdinov*.
 
 NCA learns a linear transformation of the dataset such that the expected leave-one-out performance of kNN in the transformed space is maximized.
 
@@ -27,10 +27,6 @@ We generate a 3-D dataset where the first 2 dimensions are concentric rings and 
 </p>
 
 Notice how PCA has failed to project out the noise, a result of a high noise variance in the third dimension.
-
-## Metric Learning
-
-Perform
 
 ## Notes
 
