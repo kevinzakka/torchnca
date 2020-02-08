@@ -1,16 +1,15 @@
 """A simple implementation of NCA.
-
-Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
 """
 
 import numpy as np
 import torch
-from ipdb import set_trace
-from sklearn.metrics import pairwise_distances
 
 
 class NCA:
   """Neighbourhood Components Analysis.
+
+  References:
+    [1]: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
   """
   def __init__(self, dim=None, init="random", max_iters=500, tol=1e-5):
     """Constructor.
