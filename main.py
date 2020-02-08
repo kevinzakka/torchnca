@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 
 def make_circle(r, num_samples):
   t = np.linspace(0, 2*np.pi, num_samples)
-  xc, yc = 0, 0
+  xc, yc = 0, 0  # circle center coordinates
   x = r*np.cos(t) + 0.2*np.random.randn(num_samples) + xc
   y = r*np.sin(t) + 0.2*np.random.randn(num_samples) + yc
   return x, y
@@ -26,11 +26,11 @@ def gen_data(num_samples, num_classes, mean, std, device):
   y = []
   for i, r in enumerate(range(num_classes)):
     # first two dimensions are that of a circle
-    x1, x2 = make_circle(r+1.5, num_samples)
+    x1, x2 = make_circle(r+1.5, num_samples_per)
     # third dimension is Gaussian noise
-    x3 = std*np.random.randn(num_samples) + mean
+    x3 = std*np.random.randn(num_samples_per) + mean
     X.append(np.stack([x1, x2, x3]))
-    y.append(np.repeat(i, num_samples))
+    y.append(np.repeat(i, num_samples_per))
   X = np.concatenate(X, axis=1)
   y = np.concatenate(y)
   indices = list(range(X.shape[1]))
@@ -62,9 +62,9 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 150
-  noise_std = 5
-  X, y = gen_data(num_samples, 5, 0, noise_std, device)
+  num_samples = 500
+  X, y = gen_data(num_samples, 5, 0, args.sigma, device)
+  print(X.shape)
 
   # plot first two dimensions of original data
   plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
@@ -78,19 +78,23 @@ def main(args):
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
-  nca = NCA(dim=2, init="identity", max_iters=500, tol=1e-4)
-  nca.train(X, y, batch_size=128)
-  print(nca.A.detach().cpu().numpy())
+  nca = NCA(dim=2, init="random", max_iters=500, tol=1e-5)
+  nca.train(X, y, batch_size=256, lr=1e-4, momentum=0)
   X_nca = nca(X).detach().cpu().numpy()
+  
+  # plot PCA vs NCA
   y = y.detach().cpu().numpy()
   X = X.detach().cpu().numpy()
-
   plot([X_nca, X_pca], y, ["nca", "pca"])
+  
+  A = nca.A.detach().cpu().numpy()
+  print("\nSolution: \n", A)
 
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
+  parser.add_argument("--sigma", type=float, default=5, help="The standard deviation of the Gaussian noise.")
   parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to show GUI.")
   args, unparsed = parser.parse_known_args()
   main(args)

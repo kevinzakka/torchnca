@@ -5,6 +5,8 @@ Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
 
 import numpy as np
 import torch
+from ipdb import set_trace
+from sklearn.metrics import pairwise_distances
 
 
 class NCA:
@@ -55,18 +57,16 @@ class NCA:
   def _pairwise_l2_sq(self, X):
     """Compute pairwise squared Euclidean distances.
     """
-    dot = torch.mm(X, torch.t(X))
+    dot = torch.mm(X.double(), torch.t(X.double()))
     norm_sq = torch.diag(dot)
     dist = norm_sq[None, :] - 2*dot + norm_sq[:, None]
     dist = torch.clamp(dist, min=0)  # replace negative values with 0
-    dist[dist != dist] = 0  # replace nan values with 0
-    dist.diagonal().copy_(np.inf*torch.ones(len(dist)))
-    return dist
+    return dist.float()
 
   def _softmax(self, X):
     """Compute row-wise softmax.
     """
-    exp = torch.exp(X).clone()
+    exp = torch.exp(X)
     return exp / exp.sum(dim=1)
 
   def loss(self, X, y_mask):
@@ -74,6 +74,10 @@ class NCA:
     # in transformed space
     embedding = torch.mm(X, torch.t(self.A))
     distances = self._pairwise_l2_sq(embedding)
+
+    # fill diagonal values such that exponentiating them
+    # makes them equal to 0
+    distances.diagonal().copy_(np.inf*torch.ones(len(distances)))
 
     # compute pairwise probability matrix p_ij
     # defined by a softmax over negative squared
@@ -97,11 +101,11 @@ class NCA:
     # to maximize the above expectation
     # we can negate it and feed it to
     # a minimizer
-    loss = -torch.log(p_i).sum()
+    loss = -p_i.sum()
 
     return loss
 
-  def train(self, X, y, batch_size=None):
+  def train(self, X, y, batch_size=None, lr=1e-5, momentum=0.9):
     """Trains NCA until convergence.
 
     Specifically, we maximize the expected number of points
@@ -118,39 +122,42 @@ class NCA:
     self.num_train, self.num_dims = X.shape
     self.device = torch.device("cuda" if X.is_cuda else "cpu")
     if batch_size is None:
-      batch_size = self.num_train // 2
+      batch_size = self.num_train
 
     # initialize the linear transformation matrix A
     self._init_transformation()
 
-    # compute pairwise boolean class matrix
-    y_mask = y[:, None] == y[None, :]
-
-    optimizer = torch.optim.SGD([self.A], lr=1e-5, momentum=0.99)
+    optimizer = torch.optim.SGD([self.A], lr=lr, momentum=momentum)
     iters_per_epoch = int(np.ceil(self.num_train / batch_size))
     i_global = 0
     for epoch in range(self.max_iters):
+      rand_idxs = torch.randperm(len(y))  # shuffle dataset
+      X = X[rand_idxs]
+      y = y[rand_idxs]
       A_prev = optimizer.param_groups[0]['params'][0].clone()
       for i in range(iters_per_epoch):
         # grab batch
         X_batch = X[i*batch_size:(i+1)*batch_size]
         y_batch = y[i*batch_size:(i+1)*batch_size]
-        y_mask_batch = y_mask[i*batch_size:(i+1)*batch_size, i*batch_size:(i+1)*batch_size]
+
+        # compute pairwise boolean class matrix
+        y_mask = y_batch[:, None] == y_batch[None, :]
 
         # compute loss and take gradient step
         optimizer.zero_grad()
-        loss = self.loss(X_batch, y_mask_batch)
+        loss = self.loss(X_batch, y_mask)
         loss.backward()
+        torch.nn.utils.clip_grad_norm([self.A], 5)
         optimizer.step()
 
         i_global += 1
-        if not i_global % 100:
+        if not i_global % 25:
           print("epoch: {} - loss: {:.5f}".format(epoch+1, loss.item()))
 
       # check if within convergence
       A_curr = optimizer.param_groups[0]['params'][0]
-      if torch.all(torch.abs(A_prev - A_curr) < self.tol):
-        print("[*] Optimization has converged.")
+      if torch.all(torch.abs(A_prev - A_curr) <= self.tol):
+        print("[*] Optimization has converged in {} mini batch iterations.".format(i_global))
         break
 
     self.A = optimizer.param_groups[0]['params'][0].clone()
