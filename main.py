@@ -8,6 +8,8 @@ import torch
 
 from nca import NCA
 from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 def make_circle(r, num_samples):
@@ -71,9 +73,8 @@ def main(args):
   plt.show()
 
   # fit PCA
-  pca = PCA(n_components=2)
-  pca.fit(X)
-  X_pca = pca.transform(X)
+  pipeline = Pipeline([('scaling', StandardScaler()), ('pca', PCA(n_components=2))])
+  X_pca = pipeline.fit_transform(X)
 
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
