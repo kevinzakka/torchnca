@@ -35,6 +35,8 @@ class NCA:
     self.init = init
     self.max_iters = max_iters
     self.tol = tol
+    self._mean = None
+    self._stddev = None
 
   def __call__(self, X):
     """Apply the learned linear map to the input.
@@ -47,26 +49,42 @@ class NCA:
     if self.dim is None:
       self.dim = self.num_dims
     if self.init == "random":
-      self.A = torch.rand(self.dim, self.num_dims, requires_grad=True, device=self.device)
+      a = torch.randn(self.dim, self.num_dims) * 0.01
+      self.A = torch.nn.Parameter(a).to(self.device)
     elif self.init == "identity":
-      self.A = torch.eye(self.dim, self.num_dims, requires_grad=True, device=self.device)
+      a = torch.eye(self.dim, self.num_dims)
+      self.A = torch.nn.Parameter(a).to(self.device)
     else:
-      raise ValueError("[!] {} initialization is not supported.".format(init))
+      raise ValueError("[!] {} initialization is not supported.".format(self.init))
 
-  def _pairwise_l2_sq(self, X):
+  @staticmethod
+  def _pairwise_l2_sq(x):
     """Compute pairwise squared Euclidean distances.
     """
-    dot = torch.mm(X.double(), torch.t(X.double()))
+    dot = torch.mm(x.double(), torch.t(x.double()))
     norm_sq = torch.diag(dot)
     dist = norm_sq[None, :] - 2*dot + norm_sq[:, None]
     dist = torch.clamp(dist, min=0)  # replace negative values with 0
     return dist.float()
 
-  def _softmax(self, X):
+  @staticmethod
+  def _softmax(x):
     """Compute row-wise softmax.
     """
-    exp = torch.exp(X)
+    exp = torch.exp(x)
     return exp / exp.sum(dim=1)
+
+  @property
+  def mean(self):
+    if self._mean is None:
+      raise ValueError('No mean was computed. Make sure normalize is set to True.')
+    return self._mean
+
+  @property
+  def stddev(self):
+    if self._stddev is None:
+      raise ValueError('No stddev was computed. Make sure normalize is set to True.')
+    return self._stddev
 
   def loss(self, X, y_mask):
     # compute pairwise squared Euclidean distances
@@ -104,7 +122,7 @@ class NCA:
 
     return loss
 
-  def train(self, X, y, batch_size=None, lr=1e-5, momentum=0.9):
+  def train(self, X, y, batch_size=None, lr=1e-4, weight_decay=5, normalize=True):
     """Trains NCA until convergence.
 
     Specifically, we maximize the expected number of points
@@ -117,16 +135,31 @@ class NCA:
         `D` is the dimension of the feature space and `N`
         is the number of training examples.
       y (ndarray): The class labels of shape (N,).
+      batch_size (int): How many data samples to use in an SGD
+        update step.
+      lr (float): The learning rate.
+      weight_decay (float): The strength of the L2 regularization
+        on the learned transformation A.
+      normalize (bool): Whether to whiten the input, i.e. to
+        subtract the feature-wise mean and divide by the
+        feature-wise standard deviation.
     """
     self.num_train, self.num_dims = X.shape
     self.device = torch.device("cuda" if X.is_cuda else "cpu")
     if batch_size is None:
       batch_size = self.num_train
+    batch_size = min(batch_size, self.num_train)
 
     # initialize the linear transformation matrix A
     self._init_transformation()
 
-    optimizer = torch.optim.SGD([self.A], lr=lr, momentum=momentum)
+    # zero-mean the input data
+    if normalize:
+      self._mean = X.mean(dim=0)
+      self._stddev = X.std(dim=0)
+      X = (X - self._mean) / self._stddev
+
+    optimizer = torch.optim.SGD([self.A], lr=lr, weight_decay=weight_decay)
     iters_per_epoch = int(np.ceil(self.num_train / batch_size))
     i_global = 0
     for epoch in range(self.max_iters):
@@ -146,7 +179,6 @@ class NCA:
         optimizer.zero_grad()
         loss = self.loss(X_batch, y_mask)
         loss.backward()
-        torch.nn.utils.clip_grad_norm([self.A], 5)
         optimizer.step()
 
         i_global += 1
@@ -158,5 +190,3 @@ class NCA:
       if torch.all(torch.abs(A_prev - A_curr) <= self.tol):
         print("[*] Optimization has converged in {} mini batch iterations.".format(i_global))
         break
-
-    self.A = optimizer.param_groups[0]['params'][0].clone()

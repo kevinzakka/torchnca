@@ -78,13 +78,12 @@ def main(args):
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
-  nca = NCA(dim=2, init="identity", max_iters=500, tol=1e-5)
-  nca.train(X, y, batch_size=256, lr=1e-4, momentum=0)
+  nca = NCA(dim=2, init="identity", max_iters=1000, tol=1e-5)
+  nca.train(X, y, batch_size=256, normalize=False, lr=1e-4, weight_decay=5)
   X_nca = nca(X).detach().cpu().numpy()
   
   # plot PCA vs NCA
   y = y.detach().cpu().numpy()
-  X = X.detach().cpu().numpy()
   plot([X_nca, X_pca], y, ["nca", "pca"])
   
   A = nca.A.detach().cpu().numpy()

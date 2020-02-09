@@ -12,7 +12,9 @@ NCA learns a linear transformation of the dataset such that the expected leave-o
 nca = NCA(dim=2, init="identity")
 
 # fit an nca model to a dataset
-nca.train(X, y, batch_size=64)
+# normalize the input data before
+# running the optimization
+nca.train(X, y, batch_size=64, normalize=True)
 
 # apply the learned linear map to the data
 X_nca = nca(X)
@@ -26,9 +28,4 @@ We generate a 3-D dataset where the first 2 dimensions are concentric rings and 
  <img src="./assets/res.png" width="80%">
 </p>
 
-Notice how PCA has failed to project out the noise, a result of a high noise variance in the third dimension.
-
-## Notes
-
-* The learning rate, batch size and initialization strategy are critical for convergence. You need to tune them to obtain a sensible solution.
-* Lowering the noise variance of the third dimension (e.g. `0.1`) makes it easier for PCA to tease out the projection.
+Notice how PCA has failed to project out the noise, a result of a high noise variance in the third dimension. You can try lowering it (e.g. `0.1`) using the `--sigma` command line argument to see its effect on PCA.
