@@ -54,7 +54,7 @@ def plot(Xs, y, labels, save=None):
 
 def main(args):
   np.random.seed(args.seed)
-  if args.cuda:
+  if args.cuda and torch.cuda.is_available():
     torch.cuda.manual_seed(args.seed)
     device = torch.device("cuda")
   else:
@@ -62,7 +62,7 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 500
+  num_samples = 200
   X, y = gen_data(num_samples, 5, 0, args.sigma, device)
   print(X.shape)
 
@@ -79,7 +79,7 @@ def main(args):
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
   nca = NCA(dim=2, init="identity", max_iters=1000, tol=1e-5)
-  nca.train(X, y, batch_size=256, normalize=False, lr=1e-4, weight_decay=5)
+  nca.train(X, y, batch_size=128, weight_decay=10)
   X_nca = nca(X).detach().cpu().numpy()
   
   # plot PCA vs NCA

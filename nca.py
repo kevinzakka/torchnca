@@ -106,7 +106,7 @@ class NCA:
     p_ij = self._softmax(-distances)
 
     # for each p_i, zero out any p_ij that
-    # is not of the same class label as i.
+    # is not of the same class label as i
     p_ij_mask = p_ij * y_mask.float()
 
     # sum over js to compute p_i
@@ -118,8 +118,18 @@ class NCA:
     # to maximize the above expectation
     # we can negate it and feed it to
     # a minimizer
-    loss = -p_i.sum()
+    term_1 = -p_i.sum()
 
+    # to prevent the embeddings of different
+    # classes from collapsing to the same
+    # point, we add a hinge loss penalty
+    distances.diagonal().copy_(torch.zeros(len(distances)))
+    diff_class_distances = distances * (~y_mask).float()
+    margin_diff = 1 - diff_class_distances
+    term_2 = torch.clamp(margin_diff, min=0).pow(2).sum(1).mean()
+
+    # sum both loss terms and return
+    loss = term_1 + term_2
     return loss
 
   def train(self, X, y, batch_size=None, lr=1e-4, weight_decay=5, normalize=True):
@@ -159,7 +169,12 @@ class NCA:
       self._stddev = X.std(dim=0)
       X = (X - self._mean) / self._stddev
 
-    optimizer = torch.optim.SGD([self.A], lr=lr, weight_decay=weight_decay)
+    optim_args = {
+      'lr': lr,
+      'weight_decay': weight_decay,
+      'momentum': 0.9,
+    }
+    optimizer = torch.optim.SGD([self.A], **optim_args)
     iters_per_epoch = int(np.ceil(self.num_train / batch_size))
     i_global = 0
     for epoch in range(self.max_iters):
