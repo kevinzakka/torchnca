@@ -62,7 +62,7 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 200
+  num_samples = 300
   X, y = gen_data(num_samples, 5, 0, args.sigma, device)
   print(X.shape)
 
@@ -78,8 +78,8 @@ def main(args):
   # fit NCA
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
-  nca = NCA(dim=2, init="identity", max_iters=1000, tol=1e-5)
-  nca.train(X, y, batch_size=128, weight_decay=10)
+  nca = NCA(dim=2, init=args.init, max_iters=1000, tol=1e-5)
+  nca.train(X, y, batch_size=None, weight_decay=30)
   X_nca = nca(X).detach().cpu().numpy()
   
   # plot PCA vs NCA
@@ -94,6 +94,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
   parser.add_argument("--sigma", type=float, default=5, help="The standard deviation of the Gaussian noise.")
+  parser.add_argument("--init", type=str, default="identity", help="Which initialization to use.")
   parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to show GUI.")
   args, unparsed = parser.parse_known_args()
   main(args)

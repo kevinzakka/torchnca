@@ -1,4 +1,4 @@
-"""A simple implementation of NCA.
+"""A pytorch implementation of NCA.
 """
 
 import numpy as np
@@ -6,7 +6,7 @@ import torch
 
 
 class NCA:
-  """Neighbourhood Components Analysis.
+  """Neighbourhood Components Analysis [1].
 
   References:
     [1]: https://www.cs.toronto.edu/~hinton/absps/nca.pdf
@@ -23,7 +23,7 @@ class NCA:
         reduction.
       init (str): The type of initialization to use for
         the matrix A.
-          - `random`: A = N(O, I)
+          - `random`: A = N(0, I)
           - `identity`: A = I
       max_iters (int): The maximum number of iterations
         to run the optimization for.
@@ -70,6 +70,11 @@ class NCA:
   @staticmethod
   def _softmax(x):
     """Compute row-wise softmax.
+
+    Notes:
+      Since the input to this softmax is the negative of the
+      pairwise L2 distances, we don't need to do the classical
+      numerical stability trick.
     """
     exp = torch.exp(x)
     return exp / exp.sum(dim=1)
@@ -118,7 +123,9 @@ class NCA:
     # to maximize the above expectation
     # we can negate it and feed it to
     # a minimizer
-    term_1 = -p_i.sum()
+    # for numerical stability, we only
+    # log_sum over non-zero values
+    classification_loss = -torch.log(torch.masked_select(p_i, p_i!=0)).sum()
 
     # to prevent the embeddings of different
     # classes from collapsing to the same
@@ -126,10 +133,10 @@ class NCA:
     distances.diagonal().copy_(torch.zeros(len(distances)))
     diff_class_distances = distances * (~y_mask).float()
     margin_diff = 1 - diff_class_distances
-    term_2 = torch.clamp(margin_diff, min=0).pow(2).sum(1).mean()
+    hinge_loss = torch.clamp(margin_diff, min=0).pow(2).sum(1).mean()
 
     # sum both loss terms and return
-    loss = term_1 + term_2
+    loss = classification_loss + hinge_loss
     return loss
 
   def train(self, X, y, batch_size=None, lr=1e-4, weight_decay=5, normalize=True):
