@@ -41,6 +41,8 @@ class NCA:
   def __call__(self, X):
     """Apply the learned linear map to the input.
     """
+    if self._mean is not None and self._stddev is not None:
+      X = (X - self._mean) / self._stddev
     return torch.mm(X, torch.t(self.A))
 
   def _init_transformation(self):
@@ -125,7 +127,7 @@ class NCA:
     # a minimizer
     # for numerical stability, we only
     # log_sum over non-zero values
-    classification_loss = -torch.log(torch.masked_select(p_i, p_i!=0)).sum()
+    classification_loss = -torch.log(torch.masked_select(p_i, p_i != 0)).sum()
 
     # to prevent the embeddings of different
     # classes from collapsing to the same
@@ -139,7 +141,7 @@ class NCA:
     loss = classification_loss + hinge_loss
     return loss
 
-  def train(self, X, y, batch_size=None, lr=1e-4, weight_decay=5, normalize=True):
+  def train(self, X, y, batch_size=None, lr=1e-4, weight_decay=10, normalize=True):
     """Trains NCA until convergence.
 
     Specifically, we maximize the expected number of points

@@ -79,7 +79,7 @@ def main(args):
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
   nca = NCA(dim=2, init=args.init, max_iters=1000, tol=1e-5)
-  nca.train(X, y, batch_size=None, weight_decay=30)
+  nca.train(X, y, batch_size=None, weight_decay=10)
   X_nca = nca(X).detach().cpu().numpy()
   
   # plot PCA vs NCA
