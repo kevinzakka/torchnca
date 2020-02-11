@@ -22,10 +22,23 @@ X_nca = nca(X)
 
 ## Dimensionality Reduction
 
-We generate a 3-D dataset where the first 2 dimensions are concentric rings and the third dimension is Gaussian noise. We plot the result of PCA and NCA with 2 components.
+We generate a 3-D dataset where the first 2 dimensions are concentric rings and the third dimension is Gaussian noise. We plot the result of PCA, LDA and NCA with 2 components.
 
 <p align="center">
- <img src="./assets/res.png" width="80%">
+ <img src="./assets/res.png" width="100%">
 </p>
 
-Notice how PCA has failed to project out the noise, a result of a high noise variance in the third dimension. You can try lowering it (e.g. `0.1`) using the `--sigma` command line argument to see its effect on PCA.
+Notice how PCA has failed to project out the noise, a result of a high noise variance in the third dimension. LDA also struggles to recover the concentric pattern since the classes themselves are not linearly separable.
+
+## kNN on MNIST
+
+We compute the classification error, computation time and storage cost of two algorithms:
+
+* kNN (k = 6) on the raw 784 dimensional MNIST dataset 
+* kNN (k = 6) on a learned 64 dimensional NCA projection of the MNIST dataset
+
+| Method  | NCA + kNN | Raw kNN     |
+|---------|-----------|-------------|
+| Time    | 4.45s     | 123.15s     |
+| Storage | 12.8 Mb   | 156.8 Mb    |
+| Error   | 3.4%      | 2.9%        |

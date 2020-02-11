@@ -37,6 +37,7 @@ class NCA:
     self.tol = tol
     self._mean = None
     self._stddev = None
+    self._losses = None
 
   def __call__(self, X):
     """Apply the learned linear map to the input.
@@ -92,6 +93,12 @@ class NCA:
     if self._stddev is None:
       raise ValueError('No stddev was computed. Make sure normalize is set to True.')
     return self._stddev
+
+  @property
+  def losses(self):
+    if self._losses is None:
+      raise ValueError('There are no losses to report. You must call train first.')
+    return self._losses
 
   def loss(self, X, y_mask):
     # compute pairwise squared Euclidean distances
@@ -163,6 +170,7 @@ class NCA:
         subtract the feature-wise mean and divide by the
         feature-wise standard deviation.
     """
+    self._losses = []
     self.num_train, self.num_dims = X.shape
     self.device = torch.device("cuda" if X.is_cuda else "cpu")
     if batch_size is None:
@@ -202,6 +210,7 @@ class NCA:
         # compute loss and take gradient step
         optimizer.zero_grad()
         loss = self.loss(X_batch, y_mask)
+        self._losses.append(loss.item())
         loss.backward()
         optimizer.step()
 
