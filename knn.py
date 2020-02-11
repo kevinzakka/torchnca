@@ -46,14 +46,14 @@ def main(args):
   y_test = y_test.cpu().numpy()
 
   # NCA + kNN
-  nca = NCA(dim=64, init=args.init, max_iters=70, tol=1e-5)
+  nca = NCA(dim=32, init=args.init, max_iters=70, tol=1e-5)
   nca.train(X_train, y_train, batch_size=512, weight_decay=10, lr=1e-4, normalize=False)
   A = nca.A.detach().cpu().numpy()
   X_train = X_train.cpu().numpy()
   y_train = y_train.cpu().numpy()
   X_train_embed = X_train @ A.T
   X_test_embed = X_test @ A.T
-  knn = KNeighborsClassifier(n_neighbors=6, n_jobs=-1)
+  knn = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
   knn.fit(X_train_embed, y_train)
   tic = time.time()
   predictions = knn.predict(X_test_embed)
@@ -64,8 +64,8 @@ def main(args):
   print("nca knn - time: {:.2f} - error: {:.2f} - storage: {:.2f} Mb".format(
     nca_time, 100 * nca_error, nca_bytes*1e-6))
 
-  # vanilla kNN
-  knn = KNeighborsClassifier(n_neighbors=6, n_jobs=-1)
+  # raw kNN
+  knn = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
   knn.fit(X_train, y_train)
   tic = time.time()
   predictions = knn.predict(X_test)
@@ -84,7 +84,7 @@ def main(args):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
-  parser.add_argument("--init", type=str, default="identity", help="Which initialization to use.")
+  parser.add_argument("--init", type=str, default="random", help="Which initialization to use.")
   parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to show GUI.")
   args, unparsed = parser.parse_known_args()
   main(args)

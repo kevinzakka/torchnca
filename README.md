@@ -34,11 +34,11 @@ Notice how PCA has failed to project out the noise, a result of a high noise var
 
 We compute the classification error, computation time and storage cost of two algorithms:
 
-* kNN (k = 6) on the raw 784 dimensional MNIST dataset 
-* kNN (k = 6) on a learned 64 dimensional NCA projection of the MNIST dataset
+* kNN (k = 5) on the raw 784 dimensional MNIST dataset
+* kNN (k = 5) on a learned 32 dimensional NCA projection of the MNIST dataset
 
 | Method  | NCA + kNN | Raw kNN     |
 |---------|-----------|-------------|
-| Time    | 4.45s     | 123.15s     |
-| Storage | 12.8 Mb   | 156.8 Mb    |
-| Error   | 3.4%      | 2.9%        |
+| Time    | 2.37s     | 155.25s     |
+| Storage | 6.40 Mb   | 156.8 Mb    |
+| Error   | 3.3%      | 2.8%        |

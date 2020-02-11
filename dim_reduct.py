@@ -21,7 +21,7 @@ def make_circle(r, num_samples):
   return x, y
 
 
-def gen_data(num_samples, num_classes, mean, std, device):
+def gen_data(num_samples, num_classes, mean, std):
   """Generates the data.
   """
   num_samples_per = num_samples // num_classes
@@ -66,7 +66,7 @@ def main(args):
     device = torch.device("cpu")
 
   num_samples = 300
-  X, y = gen_data(num_samples, 5, 0, args.sigma, device)
+  X, y = gen_data(num_samples, 5, 0, args.sigma)
   print("data", X.shape)
 
   # plot first two dimensions of original data
@@ -86,11 +86,11 @@ def main(args):
   nca = NCA(dim=2, init=args.init, max_iters=1000, tol=1e-5)
   nca.train(X, y, batch_size=None, weight_decay=10)
   X_nca = nca(X).detach().cpu().numpy()
-  
+
   # plot PCA vs NCA
   y = y.detach().cpu().numpy()
   plot([X_nca, X_pca, X_lda], y, ["nca", "pca", "lda"], save="res.png")
-  
+
   A = nca.A.detach().cpu().numpy()
   print("\nSolution: \n", A)
 
