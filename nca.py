@@ -157,10 +157,10 @@ class NCA:
     in the transformed space.
 
     Args:
-      X (ndarray): The dataset of shape (N, D) where
+      X (torch.FloatTensor): The dataset of shape (N, D) where
         `D` is the dimension of the feature space and `N`
         is the number of training examples.
-      y (ndarray): The class labels of shape (N,).
+      y (torch.LongTensor): The class labels of shape (N,).
       batch_size (int): How many data samples to use in an SGD
         update step.
       lr (float): The learning rate.
