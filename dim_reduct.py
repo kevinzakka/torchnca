@@ -45,7 +45,7 @@ def gen_data(num_samples, num_classes, mean, std):
 
 
 def plot(Xs, y, labels, save=None):
-  fig, axes = plt.subplots(1, len(labels), figsize=(14, 4))
+  fig, axes = plt.subplots(1, len(labels), figsize=(18, 4))
   for ax, X, lab in zip(axes, Xs, labels):
     ax.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
     ax.title.set_text(lab)
@@ -65,7 +65,7 @@ def main(args):
     torch.manual_seed(args.seed)
     device = torch.device("cpu")
 
-  num_samples = 300
+  num_samples = 500
   X, y = gen_data(num_samples, 5, 0, args.sigma)
   print("data", X.shape)
 
@@ -84,12 +84,13 @@ def main(args):
   X = torch.from_numpy(X).float().to(device)
   y = torch.from_numpy(y).long().to(device)
   nca = NCA(dim=2, init=args.init, max_iters=1000, tol=1e-5)
-  nca.train(X, y, batch_size=None, weight_decay=10)
+  nca.train(X, y, batch_size=None, weight_decay=20)
   X_nca = nca(X).detach().cpu().numpy()
 
   # plot PCA vs NCA
   y = y.detach().cpu().numpy()
-  plot([X_nca, X_pca, X_lda], y, ["nca", "pca", "lda"], save="res.png")
+  X = X.detach().cpu().numpy()
+  plot([X, X_nca, X_pca, X_lda], y, ["original", "nca", "pca", "lda"])
 
   A = nca.A.detach().cpu().numpy()
   print("\nSolution: \n", A)
