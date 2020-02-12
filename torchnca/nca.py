@@ -1,6 +1,3 @@
-"""A pytorch implementation of NCA.
-"""
-
 import numpy as np
 import torch
 
@@ -148,7 +145,16 @@ class NCA:
     loss = classification_loss + hinge_loss
     return loss
 
-  def train(self, X, y, batch_size=None, lr=1e-4, weight_decay=10, normalize=True):
+  def train(
+    self,
+    X,
+    y,
+    batch_size=None,
+    lr=1e-4,
+    momentum=0.9,
+    weight_decay=10,
+    normalize=True,
+  ):
     """Trains NCA until convergence.
 
     Specifically, we maximize the expected number of points
@@ -189,7 +195,7 @@ class NCA:
     optim_args = {
       'lr': lr,
       'weight_decay': weight_decay,
-      'momentum': 0.9,
+      'momentum': momentum,
     }
     optimizer = torch.optim.SGD([self.A], **optim_args)
     iters_per_epoch = int(np.ceil(self.num_train / batch_size))

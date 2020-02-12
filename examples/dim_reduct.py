@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from nca import NCA
+from torchnca import NCA
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.pipeline import Pipeline
@@ -71,6 +71,7 @@ def main(args):
 
   # plot first two dimensions of original data
   plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+  plt.savefig("/Users/kevin/Desktop/tcard.png", format="png", dpi=300)
   plt.show()
 
   # fit PCA
@@ -90,7 +91,7 @@ def main(args):
   # plot PCA vs NCA
   y = y.detach().cpu().numpy()
   X = X.detach().cpu().numpy()
-  plot([X, X_nca, X_pca, X_lda], y, ["original", "nca", "pca", "lda"])
+  plot([X, X_nca, X_pca, X_lda], y, ["original", "torchnca", "pca", "lda"])
 
   A = nca.A.detach().cpu().numpy()
   print("\nSolution: \n", A)

@@ -13,7 +13,7 @@ import torch
 from torchvision import datasets, transforms
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-from nca import NCA
+from torchnca import NCA
 
 
 def main(args):
@@ -61,7 +61,7 @@ def main(args):
   nca_time = toc - tic
   nca_error = 1 - accuracy_score(predictions, y_test)
   nca_bytes = X_train_embed.size * X_train_embed.itemsize
-  print("nca knn - time: {:.2f} - error: {:.2f} - storage: {:.2f} Mb".format(
+  print("torchnca knn - time: {:.2f} - error: {:.2f} - storage: {:.2f} Mb".format(
     nca_time, 100 * nca_error, nca_bytes*1e-6))
 
   # raw kNN
