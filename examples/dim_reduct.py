@@ -71,7 +71,6 @@ def main(args):
 
   # plot first two dimensions of original data
   plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
-  plt.savefig("/Users/kevin/Desktop/tcard.png", format="png", dpi=300)
   plt.show()
 
   # fit PCA
