@@ -49,10 +49,10 @@ class NCA:
     if self.dim is None:
       self.dim = self.num_dims
     if self.init == "random":
-      a = torch.randn(self.dim, self.num_dims).to(self.device) * 0.01
+      a = torch.randn(self.dim, self.num_dims, device=self.device) * 0.01
       self.A = torch.nn.Parameter(a)
     elif self.init == "identity":
-      a = torch.eye(self.dim, self.num_dims).to(self.device)
+      a = torch.eye(self.dim, self.num_dims, device=self.device)
       self.A = torch.nn.Parameter(a)
     else:
       raise ValueError("[!] {} initialization is not supported.".format(self.init))
