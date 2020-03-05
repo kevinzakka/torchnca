@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
   name='torchnca',
-  version='0.1.0',
+  version='0.1.1',
   description='Neighbourhood Components Analysis in PyTorch.',
   long_description=long_description,
   long_description_content_type='text/markdown',
