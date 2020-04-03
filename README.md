@@ -1,8 +1,8 @@
 # torchnca
 
-A PyTorch implementation of [Neighbourhood Components Analysis](https://www.cs.toronto.edu/~hinton/absps/nca.pdf) by *J. Goldberger, G. Hinton, S. Roweis, R. Salakhutdinov*.
+A PyTorch implementation of [Neighbourhood Components Analysis](https://www.cs.toronto.edu/~hinton/absps/nca.pdf) by *J. Goldberger, G. Hinton, S. Roweis, R. Salakhutdinov*. NCA is a metric learning technique that learns a linear transformation of the dataset such that the expected leave-one-out performance of kNN in the transformed space is maximized.
 
-NCA learns a linear transformation of the dataset such that the expected leave-one-out performance of kNN in the transformed space is maximized.
+For a more detailed explanation of NCA, check out the accompanying [blog post](https://kevinzakka.github.io/2020/02/10/nca/).
 
 # Installation
 
