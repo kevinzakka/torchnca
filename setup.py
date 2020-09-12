@@ -22,7 +22,7 @@ setup(
   packages=find_packages(exclude=['examples']),
   install_requires=[
     'numpy>=1.0.0,<2.0.0',
-    'torch>=1.0.0,<=1.4.0',
+    'torch>=1.0.0',
   ],
   python_requires='>=3.5',
 )

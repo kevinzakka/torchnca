@@ -101,6 +101,6 @@ if __name__ == "__main__":
   parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
   parser.add_argument("--sigma", type=float, default=5, help="The standard deviation of the Gaussian noise.")
   parser.add_argument("--init", type=str, default="identity", help="Which initialization to use.")
-  parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to show GUI.")
+  parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to use the GPU.")
   args, unparsed = parser.parse_known_args()
   main(args)

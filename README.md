@@ -51,4 +51,4 @@ We compute the classification error, computation time and storage cost of two al
 |---------|-----------|-------------|
 | Time    | 2.37s     | 155.25s     |
 | Storage | 6.40 Mb   | 156.8 Mb    |
-| Error   | 3.3%      | 2.8%        |
+| Error   | 3.27%     | 2.82%       |

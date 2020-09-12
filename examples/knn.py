@@ -31,7 +31,7 @@ def main(args):
   transform = transforms.Compose([
     transforms.ToTensor(),
   ])
-  mnist_data = datasets.MNIST('./data', train=True, transform=transform)
+  mnist_data = datasets.MNIST('./data', train=True, transform=transform, download=True)
 
   # split into train and test
   X_train = mnist_data.data[:50000]
@@ -85,6 +85,6 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--seed", type=int, default=0, help="The rng seed.")
   parser.add_argument("--init", type=str, default="random", help="Which initialization to use.")
-  parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to show GUI.")
+  parser.add_argument("--cuda", type=lambda x: x.lower() in ['true', '1'], default=False, help="Whether to use the GPU.")
   args, unparsed = parser.parse_known_args()
   main(args)

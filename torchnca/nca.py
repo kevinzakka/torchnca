@@ -49,6 +49,7 @@ class NCA:
     if self.dim is None:
       self.dim = self.num_dims
     if self.init == "random":
+      print('using random init')
       a = torch.randn(self.dim, self.num_dims, device=self.device) * 0.01
       self.A = torch.nn.Parameter(a)
     elif self.init == "identity":
@@ -137,8 +138,7 @@ class NCA:
     # classes from collapsing to the same
     # point, we add a hinge loss penalty
     distances.diagonal().copy_(torch.zeros(len(distances)))
-    diff_class_distances = distances * (~y_mask).float()
-    margin_diff = 1 - diff_class_distances
+    margin_diff = (1 - distances) * (~y_mask).float()
     hinge_loss = torch.clamp(margin_diff, min=0).pow(2).sum(1).mean()
 
     # sum both loss terms and return
